@@ -142,6 +142,11 @@ else ifeq ($(COIN),zcoin)
 DEFINES   += COIN_P2PKH_VERSION=82 COIN_P2SH_VERSION=7 COIN_FAMILY=1 COIN_COINID=\"Zcoin\" COIN_COINID_HEADER=\"ZCOIN\" COIN_COLOR_HDR=0x3EAD54 COIN_COLOR_DB=0xA3DCAE COIN_COINID_NAME=\"Zcoin\" COIN_COINID_SHORT=\"ZCOIN\" COIN_KIND=COIN_KIND_ZCOIN
 APPNAME ="Zcoin"
 APP_LOAD_PARAMS += --path $(APP_PATH)
+else ifeq ($(COIN),ocean)
+# Ocean
+DEFINES   += COIN_P2PKH_VERSION=0 COIN_P2SH_VERSION=5 COIN_FAMILY=1 COIN_COINID=\"Ocean\" COIN_COINID_HEADER=\"OCEAN\" COIN_COLOR_HDR=0xFCB653 COIN_COLOR_DB=0xFEDBA9 COIN_COINID_NAME=\"Ocean\" COIN_COINID_SHORT=\"CBT\" COIN_NATIVE_SEGWIT_PREFIX=\"cbt1\" COIN_KIND=COIN_KIND_OCEAN COIN_FLAGS=FLAG_SEGWIT_CHANGE_SUPPORT
+APPNAME ="Ocean"
+APP_LOAD_PARAMS += --path $(APP_PATH
 else ifeq ($(COIN),bitcoin_private)
 # Bitcoin Private
 DEFINES   += COIN_P2PKH_VERSION=4901 COIN_P2SH_VERSION=5039 COIN_FAMILY=1 COIN_COINID=\"BPrivate\" COIN_COINID_HEADER=\"BITCOINPRIVATE\" COIN_COLOR_HDR=0x85bb65 COIN_COLOR_DB=0xc2ddb2 COIN_COINID_NAME=\"BPrivate\" COIN_COINID_SHORT=\"BTCP\" COIN_KIND=COIN_KIND_BITCOIN_PRIVATE COIN_FORKID=42
@@ -149,7 +154,7 @@ APPNAME ="Bitcoin Private"
 APP_LOAD_PARAMS += --path $(APP_PATH)
 else
 ifeq ($(filter clean,$(MAKECMDGOALS)),)
-$(error Unsupported COIN - use bitcoin_testnet, bitcoin, bitcoin_cash, bitcoin_gold, litecoin, dogecoin, dash, zcash, horizen, komodo, stratis, peercoin, posw, pivx, viacoin, vertcoin, stealth, digibyte, qtum, hcash, bitcoin_private, zcoin) 
+$(error Unsupported COIN - use bitcoin_testnet, bitcoin, bitcoin_cash, bitcoin_gold, litecoin, dogecoin, dash, zcash, horizen, komodo, stratis, peercoin, posw, pivx, viacoin, vertcoin, stealth, digibyte, qtum, hcash, bitcoin_private, zcoin, ocean) 
 endif
 endif
 
