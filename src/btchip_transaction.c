@@ -124,7 +124,7 @@ unsigned long int transaction_get_varint(void) {
 }
 
 void transaction_parse(unsigned char parseMode) {
-    unsigned char optionP2SHSkip2FA =
+     unsigned char optionP2SHSkip2FA =
         ((N_btchip.bkp.config.options & BTCHIP_OPTION_SKIP_2FA_P2SH) != 0);
     btchip_set_check_internal_structure_integrity(0);
     BEGIN_TRY {
@@ -197,8 +197,20 @@ void transaction_parse(unsigned char parseMode) {
                                     NULL);
                         }
                     }
+                    
+/*
+    Ocean Transaction sample - header
+    02000000    version
+    01          flag
+
+    01          # of vins
+ */
+
+
+
                     // Parse the beginning of the transaction
                     // Version
+
                     check_transaction_available(4);
                     os_memmove(btchip_context_D.transactionVersion,
                                btchip_context_D.transactionBufferPointer, 4);
@@ -211,6 +223,17 @@ void transaction_parse(unsigned char parseMode) {
                             check_transaction_available(4);
                             transaction_offset_increase(4);
                         }
+                    }
+
+                    //If using OCEAN, the next byte to read in will be a 'flag'.
+                    if(G_coin_config->kind == COIN_KIND_OCEAN){
+                        //Flag
+                        unsigned int varsizebytes=1;
+                        check_transaction_available(varsizebytes);
+			//                        os_memmove(btchip_context_D.transactionContext.transactionFlag,
+			//          btchip_context_D.transactionBufferPointer,
+			//          varsizebytes);
+                        transaction_offset_increase(varsizebytes);
                     }
 
                     // Number of inputs
@@ -227,6 +250,22 @@ void transaction_parse(unsigned char parseMode) {
                     // no break is intentional
                 }
 
+/*
+    Ocean transaction sample - inputs
+
+    0000000000000000000000000000000000000000000000000000000000000000    vin prevhash
+    ffffffff    vin prev_idx
+    03  530101  script
+    ffffffff    sequence
+        - issuance example (if prev_idx & TxInputOcean.OUTPOINT_ISSUANCE_FLAG)
+        0000000000000000000000000000000000000000000000000000000000000000    nonce 32bytes
+        0000000000000000000000000000000000000000000000000000000000000000    entropy 32bytes
+        01  00038d7ea4c68000  amount (confidential value)
+        00                    inflation (confidential value)
+
+
+*/
+    
                 case BTCHIP_TRANSACTION_DEFINED_WAIT_INPUT: {
                     unsigned char trustedInputFlag = 1;
                     L_DEBUG_APP(("Process input\n"));
@@ -456,6 +495,11 @@ void transaction_parse(unsigned char parseMode) {
                                 TRANSACTION_HASH_FULL;
                         }
                     }
+                    
+
+
+
+
                     // Read the script length
                     btchip_context_D.transactionContext.scriptRemaining =
                         transaction_get_varint();
@@ -481,6 +525,8 @@ void transaction_parse(unsigned char parseMode) {
 
                     // no break is intentional
                 }
+
+
                 case BTCHIP_TRANSACTION_INPUT_HASHING_IN_PROGRESS_INPUT_SCRIPT: {
                     unsigned char dataAvailable;
                     L_DEBUG_APP(
@@ -544,6 +590,10 @@ void transaction_parse(unsigned char parseMode) {
                                     4, NULL);
                         }
                         transaction_offset_increase(4);
+                        
+                        //Additional "issuance" data to be read here if this is an Ocean
+                        //issuance transaction - TODO 
+
                         // Move to next input
                         btchip_context_D.transactionContext
                             .transactionRemainingInputsOutputs--;
@@ -571,6 +621,24 @@ void transaction_parse(unsigned char parseMode) {
                         dataAvailable;
                     break;
                 }
+
+    /*
+    Ocean transaction sample - outputs
+
+    02          # of vouts
+
+    01  8f9390e4c7b981e355aed3c5690e17c2e13bb263246a55d8039813cac670c2f1    asset (confidential asset)
+    01  000000000000de80    value (confidential value)
+    00                      nonce (confidential nonce)
+    01  51                  script
+
+    01  8f9390e4c7b981e355aed3c5690e17c2e13bb263246a55d8039813cac670c2f1
+    01  0000000000000000
+    00
+    26  6a24aa21a9ed2127440070600b5e8482e5df5815cc15b8262acf7533136c501f3cb4801faaf6
+
+   */
+
                 case BTCHIP_TRANSACTION_INPUT_HASHING_DONE: {
                     L_DEBUG_APP(("Input hashing done\n"));
                     if (parseMode == PARSE_MODE_SIGNATURE) {
@@ -667,20 +735,137 @@ void transaction_parse(unsigned char parseMode) {
                         // No more data to read, ok
                         goto ok;
                     }
-                    // Amount
-                    check_transaction_available(8);
-                    if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
-                        (btchip_context_D.transactionContext
-                             .transactionCurrentInputOutput ==
-                         btchip_context_D.transactionTargetInput)) {
-                        // Save the amount
-                        os_memmove(btchip_context_D.transactionContext
-                                       .transactionAmount,
-                                   btchip_context_D.transactionBufferPointer,
-                                   8);
-                        btchip_context_D.trustedInputProcessed = 1;
+
+                    if(G_coin_config->kind == COIN_KIND_OCEAN){
+                        //Ocean asset, value and nonce: for each of these fields,
+                        //the first byte read determines the version number,
+                        //which dictates the number of bytes to read.
+
+                        //Temp variables
+                        unsigned char version=0;
+                        unsigned int varSizeBytes=1;
+
+                        //Confidential asset
+			version=0;
+                        check_transaction_available(varSizeBytes);
+                         if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                          (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+			   version=1; //TEST
+			   //                                version = *btchip_context_D.transactionBufferPointer;
+			   //                                os_memmove(btchip_context_D.transactionContext
+			   //                                            .transactionAsset,
+			   //      btchip_context_D.transactionBufferPointer,
+			   //                                   varSizeBytes);
+                            }
+                        transaction_offset_increase(varSizeBytes);
+                        if(version == 1 || version == 0xff || version==10 || version==11){
+                            varSizeBytes=32;
+                            check_transaction_available(varSizeBytes);
+                            if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                                (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+                                // Save the asset ID
+			      //                                os_memmove(btchip_context_D.transactionContext
+			      //       .transactionAsset,
+			      //                                   btchip_context_D.transactionBufferPointer,
+			      //                                   varSizeBytes);
+                            }
+                            transaction_offset_increase(varSizeBytes);
+                        } 
+
+                        //Confidential value
+                        varSizeBytes=1;
+			version=0;
+                        check_transaction_available(varSizeBytes);
+                         if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                          (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+			   version = 1;
+			   //TEST  *btchip_context_D.transactionBufferPointer;
+			   //                                os_memmove(btchip_context_D.transactionContext
+			   //          .transactionAmount,
+			   //      btchip_context_D.transactionBufferPointer,
+			   //      varSizeBytes);
+                            }
+                        transaction_offset_increase(varSizeBytes);
+                        if(version == 1 || version == 0xff){
+                            varSizeBytes=8;
+                        } else if (version==8 || version==9){
+                            varSizeBytes=32;
+                        } else {
+                            varSizeBytes=0;
+                        } 
+                        if(varSizeBytes){
+                            check_transaction_available(varSizeBytes);
+                            if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                                (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+			      //os_memmove(btchip_context_D.transactionContext
+			      //                                       .transactionAmount,
+			      ///                                   btchip_context_D.transactionBufferPointer,
+			      //  varSizeBytes);
+                            }
+                            transaction_offset_increase(varSizeBytes);
+                        }
+
+                        //Confidential nonce
+                        varSizeBytes=1;
+			version=0;
+                        check_transaction_available(varSizeBytes);
+                         if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                          (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+			   version = 1;//TEST
+			   //*btchip_context_D.transactionBufferPointer;
+			   //   os_memmove(btchip_context_D.transactionContext
+			   //          .transactionOutputNonce,
+			   //      btchip_context_D.transactionBufferPointer,
+			   //      varSizeBytes);
+                            }
+                        transaction_offset_increase(varSizeBytes);
+                        if(version == 1 || version == 0xff || version==2 || version==3){
+                            varSizeBytes=32;
+                        } else {
+                            varSizeBytes=0;
+                        }
+			if(varSizeBytes){
+			  check_transaction_available(varSizeBytes);
+			  if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                            (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                                 btchip_context_D.transactionTargetInput)) {
+                                 // Save the output nonce
+			    //                                os_memmove(btchip_context_D.transactionContext
+			    //         .transactionOutputNonce,
+			    //                                   btchip_context_D.transactionBufferPointer,
+			    //                                   varSizeBytes);                     
+			    //      btchip_context_D.trustedInputProcessed = 1;
+                            }
+			  transaction_offset_increase(varSizeBytes); 
+			}
+                    } else {
+                         // Amount
+                        check_transaction_available(8);
+                        if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
+                            (btchip_context_D.transactionContext
+                                 .transactionCurrentInputOutput ==
+                             btchip_context_D.transactionTargetInput)) {
+                            // Save the amount
+                            os_memmove(btchip_context_D.transactionContext
+                                           .transactionAmount,
+                                       btchip_context_D.transactionBufferPointer,
+                                    8);
+                            btchip_context_D.trustedInputProcessed = 1;
+                            }
+                        transaction_offset_increase(8);
                     }
-                    transaction_offset_increase(8);
+
                     // Read the script length
                     btchip_context_D.transactionContext.scriptRemaining =
                         transaction_get_varint();
@@ -769,6 +954,25 @@ void transaction_parse(unsigned char parseMode) {
                     }
                 }
 
+/*
+    Ocean transaction sample = extra data
+
+    00000000 locktime
+
+    # for each vin - CTxInWitness
+    00  issuance amount range proof
+    00  inflation range proof
+    01  num of script witnesses
+    20 0000000000000000000000000000000000000000000000000000000000000000 script witness
+    00  num of pegin witnesses
+
+    # for each vout - CTxOutWitness
+    00  surjection proof
+    00  range proof
+    00  surjection proof
+    00  range proof
+    */
+
                 case BTCHIP_TRANSACTION_PROCESS_EXTRA: {
                     unsigned char dataAvailable;
 
@@ -837,3 +1041,4 @@ void transaction_parse(unsigned char parseMode) {
     }
     END_TRY;
 }
+
