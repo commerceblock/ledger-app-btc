@@ -24,6 +24,13 @@
 #define TRUSTEDINPUT_SIZE 48
 
 unsigned short btchip_apdu_get_trusted_input() {
+ 
+  //uint8_t buffer[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+  // PRINTF(string, array length, array);
+  // .*H for uppercase, .*h for lowercase
+  //PRINTF("What a lovely buffer:\n %.*H \n\n", 4, buffer);
+  //PRINTF("I prefer it lower-cased:\n %.*h \n", 4, buffer);
+
     unsigned char apduLength;
     unsigned char dataOffset = 0;
     unsigned char trustedInputSignature[32];

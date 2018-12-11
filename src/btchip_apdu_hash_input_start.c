@@ -93,6 +93,7 @@ unsigned short btchip_apdu_hash_input_start() {
         G_io_apdu_buffer + ISO_OFFSET_CDATA;
     btchip_context_D.transactionDataRemaining = apduLength;
 
+
     transaction_parse(PARSE_MODE_SIGNATURE);
 
     return BTCHIP_SW_OK;

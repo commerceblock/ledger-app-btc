@@ -746,13 +746,13 @@ void transaction_parse(unsigned char parseMode) {
                         unsigned int varSizeBytes=1;
 
                         //Confidential asset
-			version=0;
+			    version=1;
                         check_transaction_available(varSizeBytes);
                          if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
                           (btchip_context_D.transactionContext
                                  .transactionCurrentInputOutput ==
                                  btchip_context_D.transactionTargetInput)) {
-			   version=1; //TEST
+			   
 			   //                                version = *btchip_context_D.transactionBufferPointer;
 			   //                                os_memmove(btchip_context_D.transactionContext
 			   //                                            .transactionAsset,
@@ -778,14 +778,14 @@ void transaction_parse(unsigned char parseMode) {
 
                         //Confidential value
                         varSizeBytes=1;
-			version=0;
+			            version=1;
                         check_transaction_available(varSizeBytes);
                          if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
                           (btchip_context_D.transactionContext
                                  .transactionCurrentInputOutput ==
                                  btchip_context_D.transactionTargetInput)) {
-			   version = 1;
-			   //TEST  *btchip_context_D.transactionBufferPointer;
+			
+			   //version=*btchip_context_D.transactionBufferPointer;
 			   //                                os_memmove(btchip_context_D.transactionContext
 			   //          .transactionAmount,
 			   //      btchip_context_D.transactionBufferPointer,
@@ -799,34 +799,34 @@ void transaction_parse(unsigned char parseMode) {
                         } else {
                             varSizeBytes=0;
                         } 
-                        if(varSizeBytes){
+                        if(varSizeBytes != 0){
                             check_transaction_available(varSizeBytes);
                             if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
                                 (btchip_context_D.transactionContext
                                  .transactionCurrentInputOutput ==
                                  btchip_context_D.transactionTargetInput)) {
-			      //os_memmove(btchip_context_D.transactionContext
-			      //                                       .transactionAmount,
-			      ///                                   btchip_context_D.transactionBufferPointer,
-			      //  varSizeBytes);
+			                 os_memmove(btchip_context_D.transactionContext
+			                                             .transactionAmount,
+			                                         btchip_context_D.transactionBufferPointer,
+			                           varSizeBytes);
                             }
                             transaction_offset_increase(varSizeBytes);
                         }
 
                         //Confidential nonce
                         varSizeBytes=1;
-			version=0;
+			            version=0;
                         check_transaction_available(varSizeBytes);
                          if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
                           (btchip_context_D.transactionContext
                                  .transactionCurrentInputOutput ==
                                  btchip_context_D.transactionTargetInput)) {
-			   version = 1;//TEST
-			   //*btchip_context_D.transactionBufferPointer;
+			   //version=*btchip_context_D.transactionBufferPointer;
 			   //   os_memmove(btchip_context_D.transactionContext
 			   //          .transactionOutputNonce,
 			   //      btchip_context_D.transactionBufferPointer,
 			   //      varSizeBytes);
+                                btchip_context_D.trustedInputProcessed = 1;
                             }
                         transaction_offset_increase(varSizeBytes);
                         if(version == 1 || version == 0xff || version==2 || version==3){
@@ -834,7 +834,7 @@ void transaction_parse(unsigned char parseMode) {
                         } else {
                             varSizeBytes=0;
                         }
-			if(varSizeBytes){
+			if(varSizeBytes!=0){
 			  check_transaction_available(varSizeBytes);
 			  if ((parseMode == PARSE_MODE_TRUSTED_INPUT) &&
                             (btchip_context_D.transactionContext
@@ -845,10 +845,11 @@ void transaction_parse(unsigned char parseMode) {
 			    //         .transactionOutputNonce,
 			    //                                   btchip_context_D.transactionBufferPointer,
 			    //                                   varSizeBytes);                     
-			    //      btchip_context_D.trustedInputProcessed = 1;
-                            }
+			                                     }
 			  transaction_offset_increase(varSizeBytes); 
-			}
+			} 
+
+
                     } else {
                          // Amount
                         check_transaction_available(8);
